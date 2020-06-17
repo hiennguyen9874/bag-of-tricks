@@ -133,7 +133,7 @@ class Trainer(BaseTrainer):
         with torch.no_grad():
             with tqdm(total=len(self.datamanager.get_dataloader('val'))) as epoch_pbar:
                 epoch_pbar.set_description(f'Epoch {epoch}')
-                for batch_idx, (data, labels, _, _) in enumerate(self.datamanager.get_dataloader('val')):
+                for batch_idx, (data, labels, _) in enumerate(self.datamanager.get_dataloader('val')):
                     data, labels = data.to(self.device), labels.to(self.device)
 
                     score, feat = self.model(data)

@@ -155,3 +155,5 @@ class Market1501(object):
             re_frame += dict_cam_seq_max[int(str(cam) + str(i))]
         return re_frame + frame
 
+    def get_name_dataset(self):
+        return self.file_name.split('.zip')[0]

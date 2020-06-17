@@ -16,7 +16,7 @@ def feature_extractor(model, data_loader, device):
         model.to(device)
         with tqdm(total=len(data_loader)) as pbar:
             for i, batch in enumerate(data_loader):
-                x, y, z, t = batch
+                x, y, _ = batch
                 x = x.to(device)
                 e = model(x)
                 feature.append(e.data.cpu())

@@ -87,9 +87,9 @@ class DataManger(BaseDataManger):
         elif dataset == 'val':
             return self.val_loader
         elif dataset == 'query':
-            return self.test_set['query']
+            return self.test_loader['query']
         elif dataset == 'gallery':
-            return self.test_set['gallery']
+            return self.test_loader['gallery']
 
     def get_datasets(self, dataset: str):
         if dataset not in ['train', 'query', 'gallery']:
