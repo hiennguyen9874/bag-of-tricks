@@ -6,7 +6,7 @@
         "download": true,
         "extract": true,
         "batch_size": 128,
-        "num_instances": 32,
+        "num_instances": 4,
         "num_workers": 4,
         "pin_memory": true,
         "probability": 0.5,
@@ -40,20 +40,12 @@
     },
     "trainer_colab": {
         "epochs": 120,
-        "checkpoint_dir": "/content/drive/Shared drives/REID/HIEN/Models/St-Reid/checkpoints",
+        "checkpoint_dir": "/content/drive/Shared drives/REID/HIEN/Models/Bag_of_tricks/checkpoints",
         "log_dir": "saved/logs",
-        "log_dir_saved": "/content/drive/Shared drives/REID/HIEN/Models/St-Reid/logs",
+        "log_dir_saved": "/content/drive/Shared drives/REID/HIEN/Models/Bag_of_tricks/logs",
         "save_period": 5
     },
     "testing": {
-        "ouput_dir": "output",
-        "variance": 50,
-        "lambda1": 1,
-        "lambda2": 2,
-        "gamma1": 5,
-        "gamma2": 5,
-        "interval": 100.0,
-        "max_hist": 5000,
-        "eps": 0.0000001
+        "ouput_dir": "output"
     }
 }

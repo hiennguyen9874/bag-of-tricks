@@ -11,7 +11,7 @@ def feature_extractor(model, data_loader, device):
     Return:
         # TODO:
     """
-    feature, label, cam, frame = [], [], [], []
+    feature, label = [], []
     with torch.no_grad():
         model.to(device)
         with tqdm(total=len(data_loader)) as pbar:
@@ -21,11 +21,7 @@ def feature_extractor(model, data_loader, device):
                 e = model(x)
                 feature.append(e.data.cpu())
                 label.extend(y)
-                cam.extend(z)
-                frame.extend(t)
                 pbar.update(1)
     feature = torch.cat(feature, dim=0)
     label = np.asarray(label)
-    cam = np.asarray(cam)
-    frame = np.asarray(frame)
-    return feature, label, cam, frame
+    return feature, label

@@ -20,8 +20,6 @@ class Trainer(BaseTrainer):
         super(Trainer, self).__init__(config)
         self.datamanager = DataManger(config['data'])
 
-        self.num_part = config['model']['num_part']
-
         self.model = Baseline(
             num_classes=self.datamanager.datasource.get_num_classes('train'))
 
@@ -119,7 +117,7 @@ class Trainer(BaseTrainer):
 
                 self.train_metrics.update('loss', loss.item())
                 self.train_metrics.update('accuracy', torch.sum(
-                    preds == labels.data).double().mean())
+                    preds == labels.data).double().mean().item())
 
                 epoch_pbar.set_postfix({
                     'train_loss': self.train_metrics.avg('loss'),
@@ -145,7 +143,7 @@ class Trainer(BaseTrainer):
 
                     self.valid_metrics.update('loss', loss.item())
                     self.valid_metrics.update('accuracy', torch.sum(
-                        preds == labels.data).double().mean())
+                        preds == labels.data).double().mean().item())
 
                     epoch_pbar.set_postfix({
                         'val_loss': self.valid_metrics.avg('loss'),

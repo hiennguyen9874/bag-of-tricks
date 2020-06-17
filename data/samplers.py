@@ -119,8 +119,8 @@ class RandomIdentitySampler(torch.utils.data.Sampler):
             left_count = int(len(self.index_dict[person_id]) * rate)
             left_index = self.index_dict[person_id][0:left_count]
             right_index = self.index_dict[person_id][left_count:]
-            left_index_dict[person_id].extend(left_index)
-            right_index_dict[person_id].extend(right_index)
+            left_index_dict[person_id] = left_index
+            right_index_dict[person_id] = right_index
         return RandomIdentitySampler(self.datasource, self.batch_size, self.num_instances, left_index_dict), RandomIdentitySampler(self.datasource, self.batch_size, self.num_instances, right_index_dict)
 
 class RandomBalanceBatchSampler(torch.utils.data.BatchSampler):

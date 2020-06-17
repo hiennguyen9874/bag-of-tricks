@@ -28,7 +28,6 @@ class BaseTrainer(object):
 
         self.logger.info('Tensorboard: tensorboard --logdir {}'.format(self.cfg_trainer['log_dir']))
 
-        
         self.use_gpu = config['n_gpu'] > 0 and torch.cuda.is_available()
         self.device = torch.device('cuda:0' if self.use_gpu else 'cpu')
         self.map_location = (lambda storage, loc: storage) if self.use_gpu else None

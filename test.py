@@ -3,50 +3,59 @@ import os
 import logging
 import torch
 
-from models import PCB
+from torchsummary import summary
+
+from models import Baseline
 from data import DataManger
 from logger import setup_logging
 from utils import read_json, write_json
-from testing import extract_appearance_feature, gen_st_distribution, joint_metrics
 from evaluators import top_k, mAP, compute_distance_matrix, cmc_rank, feature_extractor, plot_loss, show_image
 
 def main(config):
     setup_logging(os.getcwd())
     logger = logging.getLogger('test')
     
+    use_gpu = config['n_gpu'] > 0 and torch.cuda.is_available()
+    device = torch.device('cuda:0' if use_gpu else 'cpu')
+
+    model = Baseline()
+    model = model.eval()
+
+    logger.info('Loading checkpoint: {} ...'.format(config['resume']))
+    checkpoint = torch.load(config['resume'], map_location='cpu')
+
+    model.load_state_dict(checkpoint['state_dict'])
+    
     datamanager = DataManger(config['data'], phase='test')
-    
-    # extract appearance feature
-    # extract_appearance_feature(logger, config, datamanager)
 
-    # generate spatial-temporal distribution
-    # gen_st_distribution(logger, config, datamanager)
-    
-    # joint metric
-    joint_metrics(logger, config, datamanager)
+    if config['extract']:
+        logger.info('Extract feature from query set...')
+        query_feature, query_label = feature_extractor(model, datamanager.get_dataloader('query'), device)
 
-    # evaluator without Spatial-temporal Stream
-    gallery_feature, gallery_label, gallery_cam, gallery_frames = torch.load(os.path.join(
+        logger.info('Extract feature from gallery set...')
+        gallery_feature, gallery_label = feature_extractor(model, datamanager.get_dataloader('gallery'), device)
+
+        gallery_embeddings = (gallery_feature, gallery_label)
+        query_embeddings = (query_feature, query_label)
+
+        os.makedirs(os.path.join(config['testing']['ouput_dir'], 'embeddings'), exist_ok=True)
+
+        with open(os.path.join(config['testing']['ouput_dir'], 'gallery_embeddings.pt'), 'wb') as f:
+            torch.save(gallery_embeddings, f)
+
+        with open(os.path.join(config['testing']['ouput_dir'], 'query_embeddings.pt'), 'wb') as f:
+            torch.save(query_embeddings, f)
+
+    gallery_feature, gallery_label = torch.load(os.path.join(
         config['testing']['ouput_dir'], 'gallery_embeddings.pt'), map_location='cpu')
-
-    query_feature, query_label, query_cam, query_frame = torch.load(os.path.join(
+    query_feature, query_label = torch.load(os.path.join(
         config['testing']['ouput_dir'], 'query_embeddings.pt'), map_location='cpu')
-
-    # normalize feature vector
-    norm = query_feature.norm(p=2, dim=1, keepdim=True)
-    query_feature = query_feature.div(norm.expand_as(query_feature))
-
-    norm = gallery_feature.norm(p=2, dim=1, keepdim=True)
-    gallery_feature = gallery_feature.div(norm.expand_as(gallery_feature))
     
     distance = compute_distance_matrix(query_feature, gallery_feature)
-    
-    top1 = top_k(distance, output=gallery_label, target=query_label, k=1)
-    top5 = top_k(distance, output=gallery_label, target=query_label, k=5)
-    top10 = top_k(distance, output=gallery_label, target=query_label, k=10)
-    m_ap = mAP(distance, output=gallery_label, target=query_label, k='all')
 
-    logger.info('without spatial-temporal: top1: {}, top5: {}, top10: {}, mAP: {}'.format(top1, top5, top10, m_ap))
+    logger.info('top1: {}'.format(top_k(distance, output=gallery_label, target=query_label, k=1)))
+    logger.info('top5: {}'.format(top_k(distance, output=gallery_label, target=query_label, k=5)))
+    logger.info('mAP: {}'.format(mAP(distance, output=gallery_label, target=query_label, k='all')))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='')
