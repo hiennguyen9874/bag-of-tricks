@@ -31,10 +31,10 @@ class Baseline(nn.Module):
         self.is_training = is_training
         self.base = torchvision.models.resnet50(pretrained=True)
         self.avgpool = nn.AdaptiveAvgPool2d(1)
+        
         # remove the final downsample of resnet
         self.base.layer4[0].downsample[0].stride = (1, 1)
         self.base.layer4[0].conv2.stride=(1,1)
-        # define 6 classifiers
 
         self.bottleneck = nn.BatchNorm1d(2048)
         self.bottleneck.bias.requires_grad_(False)

@@ -10,7 +10,7 @@ from torchsummary import summary
 
 from data import DataManger
 from base import BaseTrainer
-from losses import Softmax_Triplet_loss
+from losses import Softmax_Triplet_loss, CenterLoss
 from optimizers import WarmupMultiStepLR
 from models import Baseline
 from utils import MetricTracker
@@ -34,11 +34,18 @@ class Trainer(BaseTrainer):
             use_gpu=self.use_gpu
         )
 
+        self.center_loss = CenterLoss(
+            num_classes=self.datamanager.datasource.get_num_classes('train'),
+            feature_dim=2048,
+            use_gpu=self.use_gpu)
+
         cfg_optimizer = config['optimizer']
         self.optimizer = torch.optim.Adam(
             self.model.parameters(),
             lr=cfg_optimizer['lr'],
             weight_decay=cfg_optimizer['weight_decay'])
+
+        self.optimizer_centloss = torch.optim.SGD(self.center_loss.parameters(), lr=0.5)
 
         cfg_lr_scheduler = config['lr_scheduler']
         self.lr_scheduler = WarmupMultiStepLR(
@@ -93,9 +100,7 @@ class Trainer(BaseTrainer):
                 self._save_checkpoint(epoch, save_best=False)
 
             # save logs
-            if epoch % self.cfg_trainer['save_period'] == 0:
-                self._save_logs(epoch)
-        self._save_logs(epoch)
+            self._save_logs(epoch)
 
     def _train_epoch(self, epoch):
         """ Training step
