@@ -3,6 +3,9 @@ import torchvision
 import torch.nn as nn
 from torch.nn import init
 
+import sys
+sys.path.append('.')
+
 def weights_init_kaiming(m):
     classname = m.__class__.__name__
     if classname.find('Linear') != -1:
@@ -54,6 +57,7 @@ class Baseline(nn.Module):
         x = self.base.layer2(x)
         x = self.base.layer3(x)
         x = self.base.layer4(x)
+        # x.size = (batch_size, 2048, 16, 8)
         x = self.avgpool(x)
         x = x.view(x.shape[0], -1)
         # x.size() = (batch_size, 2048)
@@ -65,3 +69,24 @@ class Baseline(nn.Module):
             return score, x
         else:
             return feat
+
+if __name__ == "__main__":
+    from data import Market1501, ImageDataset
+    datasource = Market1501("/home/hien/Documents/datasets")
+    datasets = ImageDataset(data=datasource.get_data('train'))
+    transfrom_val = torchvision.transforms.Compose([
+            torchvision.transforms.Resize(size=(256, 128)),
+            torchvision.transforms.ToTensor(),
+            torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+    ])
+    images = []
+    labels = []
+    for i in range(4):
+        image, label, _ = datasets[i]
+        image = transfrom_val(image)
+        images.append(image)
+        labels.append(label)
+    images = torch.stack(images, dim=0)
+    model = Baseline(num_classes=751)
+    ouput = model.forward(images)
+    pass

@@ -60,6 +60,9 @@ class RandomIdentitySampler(torch.utils.data.Sampler):
 
         if batch_size <= num_instances:
             raise ValueError('batch_size <= num_instances')
+        
+        if batch_size % num_instances != 0:
+            raise ValueError('batch_size % num_instances != 0')
 
         self.batch_size = batch_size
         self.num_instances = num_instances

@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 
+import sys
+sys.path.append('.')
+
 class TripletLoss(nn.Module):
     """Triplet loss with hard positive/negative mining.
 

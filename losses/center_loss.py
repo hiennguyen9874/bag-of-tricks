@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 
+import sys
+sys.path.append('.')
+
 class CenterLoss(nn.Module):
     """Center loss.
     
