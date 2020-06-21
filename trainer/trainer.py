@@ -49,7 +49,7 @@ class Trainer(BaseTrainer):
             lr=cfg_optimizer['lr'],
             weight_decay=cfg_optimizer['weight_decay'])
 
-        self.optimizer_centloss = torch.optim.SGD(self.center_loss.parameters(), lr=0.5)
+        self.optimizer_centerloss = torch.optim.SGD(self.center_loss.parameters(), lr=0.5)
 
         # learing rate scheduler
         cfg_lr_scheduler = config['lr_scheduler']
@@ -123,7 +123,7 @@ class Trainer(BaseTrainer):
 
                 # zero gradient
                 self.optimizer.zero_grad()
-                self.optimizer_centloss.zero_grad()
+                self.optimizer_centerloss.zero_grad()
 
                 # forward batch
                 score, feat = self.model(data)
@@ -141,12 +141,12 @@ class Trainer(BaseTrainer):
 
                 # optimize
                 self.optimizer.step()
-                self.optimizer_centloss.step()
+                self.optimizer_centerloss.step()
                 
                 # update loss and accuracy in MetricTracker
                 self.train_metrics.update('loss', loss.item())
                 self.train_metrics.update('accuracy', torch.sum(
-                    preds == labels.data).double().mean().item())
+                    preds == labels.data).double().item() / data.size(0))
 
                 # update process bar
                 epoch_pbar.set_postfix({
@@ -171,13 +171,13 @@ class Trainer(BaseTrainer):
                     score, feat = self.model(data)
 
                     # calculate loss and accuracy
-                    loss = self.criterion(score, feat, labels) + + self.center_loss(feat, labels) * self.config['losses']['beta']
+                    loss = self.criterion(score, feat, labels) + self.center_loss(feat, labels) * self.config['losses']['beta']
                     _, preds = torch.max(score.data, dim=1)
 
                     # update loss and accuracy in MetricTracker
                     self.valid_metrics.update('loss', loss.item())
                     self.valid_metrics.update('accuracy', torch.sum(
-                        preds == labels.data).double().mean().item())
+                        preds == labels.data).double().item() / data.size(0))
 
                     # update process bar
                     epoch_pbar.set_postfix({
@@ -192,7 +192,9 @@ class Trainer(BaseTrainer):
         state = {
             'epoch': epoch,
             'state_dict': self.model.state_dict(),
+            'center_loss': self.center_loss.state_dict(),
             'optimizer': self.optimizer.state_dict(),
+            'optimizer_centerloss': self.optimizer_centerloss.state_dict(),
             'lr_scheduler': self.lr_scheduler.state_dict(),
             'best_accuracy': self.best_accuracy
         }
@@ -213,9 +215,11 @@ class Trainer(BaseTrainer):
         checkpoint = torch.load(resume_path, map_location=self.map_location)
         self.start_epoch = checkpoint['epoch'] + 1
         self.model.load_state_dict(checkpoint['state_dict'])
+        self.center_loss.load_state_dict(checkpoint['center_loss'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
+        self.optimizer_centerloss.load_state_dict(checkpoint['optimizer_centerloss'])
         self.lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
-        self.best_loss = checkpoint['best_accuracy']
+        self.best_accuracy = checkpoint['best_accuracy']
         self.logger.info("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
 
     def _save_logs(self, epoch):

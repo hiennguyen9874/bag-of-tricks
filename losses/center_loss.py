@@ -32,7 +32,8 @@ class CenterLoss(nn.Module):
         batch_size = x.size(0)
         distmat = torch.pow(x, 2).sum(dim=1, keepdim=True).expand(batch_size, self.num_classes) + \
                   torch.pow(self.centers, 2).sum(dim=1, keepdim=True).expand(self.num_classes, batch_size).t()
-        distmat.addmm_(1, -2, x, self.centers.t())
+        # distmat.addmm_(1, -2, x, self.centers.t())
+        distmat = torch.addmm(input=distmat, mat1=x, mat2=self.centers.t(), alpha=1, beta=-2)
 
         classes = torch.arange(self.num_classes).long()
         if self.use_gpu: 
@@ -42,7 +43,6 @@ class CenterLoss(nn.Module):
 
         dist = distmat * mask.float()
         loss = dist.clamp(min=1e-12, max=1e+12).sum() / batch_size
-
         return loss
 
 
