@@ -20,6 +20,7 @@ def main(config):
     device = torch.device('cuda:0' if use_gpu else 'cpu')
 
     datamanager = DataManger(config['data'], phase='test')
+    
     model = Baseline(num_classes=datamanager.datasource.get_num_classes(
         'train'), is_training=False)
     model = model.eval()
