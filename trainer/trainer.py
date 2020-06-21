@@ -67,13 +67,15 @@ class Trainer(BaseTrainer):
 
         # save best accuracy for function _save_checkpoint
         self.best_accuracy = None
+        
+        # send model to device
+        self.model.to(self.device)
 
         # resume model from last checkpoint
         if config['resume'] != '':
             self._resume_checkpoint(config['resume'])
 
     def train(self):
-        self.model.to(self.device)
         for epoch in range(self.start_epoch, self.epochs + 1):
             result = self._train_epoch(epoch)
 
