@@ -1,6 +1,7 @@
 import sys
 sys.path.append('.')
 
+from utils import download_file_from_google_drive
 import os
 import requests
 import tarfile
@@ -9,12 +10,10 @@ import re
 import glob
 from tqdm import tqdm
 
-from utils import download_file_from_google_drive
-
-class Market1501(object):
-    dataset_dir = 'market1501'
-    dataset_id = '12pEaAd1pDVW0Rbpdr8wUwar0K6pGu9SV'
-    file_name = 'Market-1501-v15.09.15.zip'
+class DukeMTMC_Reid(object):
+    dataset_dir = 'dukemtmc_reid'
+    dataset_id = '12nfb2yrdU3AuF3SKqLnJDyYeDqOflMVM'
+    file_name = 'DukeMTMC-reID.zip'
 
     def __init__(self, root_dir='datasets', download=True, extract=True, re_label_on_train=True):
         self.root_dir = root_dir
@@ -61,7 +60,7 @@ class Market1501(object):
 
     def process_dir(self, path, relabel):
         data = []
-        pattern = re.compile(r'([-\d]+)_c(\d)s(\d)_([-\d]+)')
+        pattern = re.compile(r'([-\d]+)_c(\d)_f([-\d]+)')
 
         with tqdm(total=len(os.listdir(path)*2)) as pbar:
             pid_container = set()
@@ -72,14 +71,10 @@ class Market1501(object):
                 name, ext = os.path.splitext(img)
                 if ext == '.jpg':
                     img_path = os.path.join(path, img)
-                    person_id, camera_id, seq, frame = map(
-                        int, pattern.search(name).groups())
-                    if person_id == -1:
-                        pbar.update(1)
-                        continue
+                    person_id, camera_id, frame = map(int, pattern.search(name).groups())
                     pid_container.add(person_id)
                     camid_containter.add(camera_id)
-                    frames_container.add(self._re_frame(camera_id, seq, frame))
+                    frames_container.add(frame)
                 pbar.update(1)
             pid2label = {pid: label for label, pid in enumerate(pid_container)}
 
@@ -87,11 +82,7 @@ class Market1501(object):
                 name, ext = os.path.splitext(img)
                 if ext == '.jpg':
                     img_path = os.path.join(path, img)
-                    person_id, camera_id, seq, frame = map(
-                        int, pattern.search(name).groups())
-                    if person_id == -1:
-                        pbar.update(1)
-                        continue
+                    person_id, camera_id, frame = map(int, pattern.search(name).groups())
                     if relabel:
                         person_id = pid2label[person_id]
                     data.append((img_path, person_id, camera_id))
@@ -99,13 +90,11 @@ class Market1501(object):
         return data, pid_container, camid_containter, frames_container
 
     def _download(self):
-        os.makedirs(os.path.join(self.root_dir,
-                                 self.dataset_dir, 'raw'), exist_ok=True)
+        os.makedirs(os.path.join(self.root_dir,self.dataset_dir, 'raw'), exist_ok=True)
         return download_file_from_google_drive(self.dataset_id, os.path.join(self.root_dir, self.dataset_dir, 'raw'))
 
     def _extract(self):
-        file_path = os.path.join(
-            self.root_dir, self.dataset_dir, 'raw', self.file_name)
+        file_path = os.path.join(self.root_dir, self.dataset_dir, 'raw', self.file_name)
         extract_dir = os.path.join(self.root_dir, self.dataset_dir, 'processed')
         if self._exists(extract_dir):
             return
@@ -140,30 +129,12 @@ class Market1501(object):
                 "Error dataset paramaster, dataset in [train, query, gallery]")
         return len(self.camid_containter[dataset])
 
-    def _re_frame(self, cam, seq, frame):
-        """ Re frames on market1501.
-            more info here: https://github.com/Wanggcong/Spatial-Temporal-Re-identification/issues/10
-        """
-        if seq == 1:
-            return frame
-        dict_cam_seq_max = {
-            11: 72681, 12: 74546, 13: 74881, 14: 74661, 15: 74891, 16: 54346, 17: 0, 18: 0,
-            21: 163691, 22: 164677, 23: 98102, 24: 0, 25: 0, 26: 0, 27: 0, 28: 0,
-            31: 161708, 32: 161769, 33: 104469, 34: 0, 35: 0, 36: 0, 37: 0, 38: 0,
-            41: 72107, 42: 72373, 43: 74810, 44: 74541, 45: 74910, 46: 50616, 47: 0, 48: 0,
-            51: 161095, 52: 161724, 53: 103487, 54: 0, 55: 0, 56: 0, 57: 0, 58: 0,
-            61: 87551, 62: 131268, 63: 95817, 64: 30952, 65: 0, 66: 0, 67: 0, 68: 0}
-        
-        re_frame = 0
-        for i in range(1, seq):
-            re_frame += dict_cam_seq_max[int(str(cam) + str(i))]
-        return re_frame + frame
-
     def get_name_dataset(self):
         return self.file_name.split('.zip')[0]
 
 if __name__ == "__main__":
-    market1501 = Market1501(root_dir='/home/hien/Documents/datasets', download=True, extract=True)
-    print('Train: len: {}, num_class: {}, num_camera: {}'.format(len(market1501.train), market1501.get_num_classes('train'), market1501.get_num_camera('train')))
-    print('Query: len: {}, num_class: {}, num_camera: {}'.format(len(market1501.query), market1501.get_num_classes('query'), market1501.get_num_camera('query')))
-    print('Gallery: len: {}, num_class: {}, num_camera: {}'.format(len(market1501.gallery), market1501.get_num_classes('gallery'), market1501.get_num_camera('gallery')))
+    dukemtmc = DukeMTMC_Reid(root_dir='/home/hien/Documents/datasets', download=True, extract=True)
+    print('Train: len: {}, num_class: {}, num_camera: {}'.format(len(dukemtmc.train), dukemtmc.get_num_classes('train'), dukemtmc.get_num_camera('train')))
+    print('Query: len: {}, num_class: {}, num_camera: {}'.format(len(dukemtmc.query), dukemtmc.get_num_classes('query'), dukemtmc.get_num_camera('query')))
+    print('Gallery: len: {}, num_class: {}, num_camera: {}'.format(len(dukemtmc.gallery), dukemtmc.get_num_classes('gallery'), dukemtmc.get_num_camera('gallery')))
+

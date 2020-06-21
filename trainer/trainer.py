@@ -20,12 +20,15 @@ class Trainer(BaseTrainer):
         super(Trainer, self).__init__(config)
         self.datamanager = DataManger(config['data'])
 
+        # model
         self.model = Baseline(
             num_classes=self.datamanager.datasource.get_num_classes('train'))
 
+        # summary model
         summary(self.model, input_size=(3, 256, 128),
                 batch_size=config['data']['batch_size'], device='cpu')
 
+        # losses
         cfg_losses = config['losses']
         self.criterion = Softmax_Triplet_loss(
             num_class=self.datamanager.datasource.get_num_classes('train'),
@@ -39,6 +42,7 @@ class Trainer(BaseTrainer):
             feature_dim=2048,
             use_gpu=self.use_gpu)
 
+        # optimizer
         cfg_optimizer = config['optimizer']
         self.optimizer = torch.optim.Adam(
             self.model.parameters(),
@@ -47,6 +51,7 @@ class Trainer(BaseTrainer):
 
         self.optimizer_centloss = torch.optim.SGD(self.center_loss.parameters(), lr=0.5)
 
+        # learing rate scheduler
         cfg_lr_scheduler = config['lr_scheduler']
         self.lr_scheduler = WarmupMultiStepLR(
             self.optimizer,
@@ -56,11 +61,14 @@ class Trainer(BaseTrainer):
             warmup_iters=cfg_lr_scheduler['iters'],
             warmup_method=cfg_lr_scheduler['method'])
 
+        # track metric
         self.train_metrics = MetricTracker('loss', 'accuracy')
         self.valid_metrics = MetricTracker('loss', 'accuracy')
 
+        # save best accuracy for function _save_checkpoint
         self.best_accuracy = None
 
+        # resume model from last checkpoint
         if config['resume'] != '':
             self._resume_checkpoint(config['resume'])
 
@@ -110,20 +118,37 @@ class Trainer(BaseTrainer):
         with tqdm(total=len(self.datamanager.get_dataloader('train'))) as epoch_pbar:
             epoch_pbar.set_description(f'Epoch {epoch}')
             for batch_idx, (data, labels, _) in enumerate(self.datamanager.get_dataloader('train')):
+                # push data to device
                 data, labels = data.to(self.device), labels.to(self.device)
-                self.optimizer.zero_grad()
 
+                # zero gradient
+                self.optimizer.zero_grad()
+                self.optimizer_centloss.zero_grad()
+
+                # forward batch
                 score, feat = self.model(data)
 
-                loss = self.criterion(score, feat, labels)
+                # calculate loss and accuracy
+                loss =  self.criterion(score, feat, labels) + self.center_loss(feat, labels) * self.config['losses']['beta']
                 _, preds = torch.max(score.data, dim=1)
+                
+                # backward parameters
                 loss.backward()
-                self.optimizer.step()
 
+                # backward parameters for center_loss
+                for param in self.center_loss.parameters():
+                    param.grad.data *= (1./self.config['losses']['beta'])
+
+                # optimize
+                self.optimizer.step()
+                self.optimizer_centloss.step()
+                
+                # update loss and accuracy in MetricTracker
                 self.train_metrics.update('loss', loss.item())
                 self.train_metrics.update('accuracy', torch.sum(
                     preds == labels.data).double().mean().item())
 
+                # update process bar
                 epoch_pbar.set_postfix({
                     'train_loss': self.train_metrics.avg('loss'),
                     'train_acc': self.train_metrics.avg('accuracy')})
@@ -139,17 +164,22 @@ class Trainer(BaseTrainer):
             with tqdm(total=len(self.datamanager.get_dataloader('val'))) as epoch_pbar:
                 epoch_pbar.set_description(f'Epoch {epoch}')
                 for batch_idx, (data, labels, _) in enumerate(self.datamanager.get_dataloader('val')):
+                    # push data to device
                     data, labels = data.to(self.device), labels.to(self.device)
-
+                    
+                    # forward batch
                     score, feat = self.model(data)
 
-                    loss = self.criterion(score, feat, labels)
+                    # calculate loss and accuracy
+                    loss = self.criterion(score, feat, labels) + + self.center_loss(feat, labels) * self.config['losses']['beta']
                     _, preds = torch.max(score.data, dim=1)
 
+                    # update loss and accuracy in MetricTracker
                     self.valid_metrics.update('loss', loss.item())
                     self.valid_metrics.update('accuracy', torch.sum(
                         preds == labels.data).double().mean().item())
 
+                    # update process bar
                     epoch_pbar.set_postfix({
                         'val_loss': self.valid_metrics.avg('loss'),
                         'val_acc': self.valid_metrics.avg('accuracy')})

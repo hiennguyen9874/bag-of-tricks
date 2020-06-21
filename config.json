@@ -18,7 +18,8 @@
     },
     "losses": {
         "margin": 0.3,
-        "epsilon": 0.1
+        "epsilon": 0.1,
+        "beta": 0.0005
     },
     "metrics": [],
     "lr_scheduler": {

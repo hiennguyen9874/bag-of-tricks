@@ -33,6 +33,5 @@ class BaseTrainer(object):
         self.map_location = (lambda storage, loc: storage) if self.use_gpu else None
 
         self.epochs = self.cfg_trainer['epochs']
-        self.save_period = self.cfg_trainer['save_period']
         self.start_epoch = 1
         self.writer = SummaryWriter(self.logs_dir)

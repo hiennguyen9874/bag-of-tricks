@@ -11,7 +11,6 @@ from .image import Market1501
 from .transforms import RandomErasing
 from base import BaseDataManger
 
-
 class DataManger(BaseDataManger):
     def __init__(self, config, phase='train'):
         super().__init__()
