@@ -9,18 +9,19 @@ import re
 import glob
 from tqdm import tqdm
 
-from utils import download_file_from_google_drive
+from utils import download_file_from_google_drive as down_gd, download_with_url
 
 class Market1501(object):
     dataset_dir = 'market1501'
     dataset_id = '12pEaAd1pDVW0Rbpdr8wUwar0K6pGu9SV'
     file_name = 'Market-1501-v15.09.15.zip'
+    google_drive_api = 'AIzaSyAVfS-7Dy34a3WjWgR509o-u_3Of59zizo'
 
     def __init__(self, root_dir='datasets', download=True, extract=True, re_label_on_train=True):
         self.root_dir = root_dir
         if download:
             print("Downloading!")
-            self.file_name = self._download()
+            self._download()
             print("Downloaded!")
         if extract:
             print("Extracting!")
@@ -101,7 +102,7 @@ class Market1501(object):
     def _download(self):
         os.makedirs(os.path.join(self.root_dir,
                                  self.dataset_dir, 'raw'), exist_ok=True)
-        return download_file_from_google_drive(self.dataset_id, os.path.join(self.root_dir, self.dataset_dir, 'raw'))
+        download_with_url(self.google_drive_api, self.dataset_id, os.path.join(self.root_dir, self.dataset_dir, 'raw'), self.file_name)
 
     def _extract(self):
         file_path = os.path.join(

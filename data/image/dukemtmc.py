@@ -1,7 +1,6 @@
 import sys
 sys.path.append('.')
 
-from utils import download_file_from_google_drive
 import os
 import requests
 import tarfile
@@ -9,17 +8,19 @@ import zipfile
 import re
 import glob
 from tqdm import tqdm
+from utils import download_file_from_google_drive as down_gd, download_with_url
 
 class DukeMTMC_Reid(object):
     dataset_dir = 'dukemtmc_reid'
     dataset_id = '12nfb2yrdU3AuF3SKqLnJDyYeDqOflMVM'
     file_name = 'DukeMTMC-reID.zip'
+    google_drive_api = 'AIzaSyAVfS-7Dy34a3WjWgR509o-u_3Of59zizo'
 
     def __init__(self, root_dir='datasets', download=True, extract=True, re_label_on_train=True):
         self.root_dir = root_dir
         if download:
             print("Downloading!")
-            self.file_name = self._download()
+            self._download()
             print("Downloaded!")
         if extract:
             print("Extracting!")
@@ -47,6 +48,13 @@ class DukeMTMC_Reid(object):
         print("Processing on gallery directory!")
         self.gallery, self.pid_container['gallery'], self.camid_containter['gallery'], self.frames_container['gallery'] = self.process_dir(
             self.gallery_dir, relabel=False)
+
+        # import numpy as np
+        # arr1 = np.array(list(self.pid_container['query']))
+        # arr2 = np.array(list(self.pid_container['gallery']))
+        # ret1 = np.setdiff1d(arr1, arr2)
+        # ret2 = np.setdiff1d(arr2, arr1)
+        # pass
 
     def get_data(self, mode='train'):
         if mode == 'train':
@@ -91,7 +99,7 @@ class DukeMTMC_Reid(object):
 
     def _download(self):
         os.makedirs(os.path.join(self.root_dir,self.dataset_dir, 'raw'), exist_ok=True)
-        return download_file_from_google_drive(self.dataset_id, os.path.join(self.root_dir, self.dataset_dir, 'raw'))
+        download_with_url(self.google_drive_api, self.dataset_id, os.path.join(self.root_dir, self.dataset_dir, 'raw'), self.file_name)
 
     def _extract(self):
         file_path = os.path.join(self.root_dir, self.dataset_dir, 'raw', self.file_name)

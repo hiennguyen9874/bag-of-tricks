@@ -1,7 +1,7 @@
 import os
 import torch
 import json
-import cv2
+# import cv2
 import random
 import torch
 import numpy as np
