@@ -49,7 +49,7 @@ class DataManger(BaseDataManger):
 
         if phase == 'train':
             self.train_sampler, self.val_sampler = RandomIdentitySampler(
-                self.training_set,
+                self.datasource.get_data('train'),
                 batch_size=config['batch_size'],
                 num_instances=config['num_instances']).split(rate=1-config['validation_split'])
 

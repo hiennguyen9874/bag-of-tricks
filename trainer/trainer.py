@@ -2,11 +2,15 @@ import torch
 import os
 import shutil
 import json
+import sys
+sys.path.append('.')
 
 import torch.nn as nn
 
 from tqdm import tqdm
 from torchsummary import summary
+from thop import profile
+
 
 from data import DataManger
 from base import BaseTrainer
