@@ -2,6 +2,7 @@ import torch
 import torchvision
 import torch.nn as nn
 from torch.nn import init
+from torchsummary import summary
 
 import sys
 sys.path.append('.')
@@ -88,5 +89,6 @@ if __name__ == "__main__":
         labels.append(label)
     images = torch.stack(images, dim=0)
     model = Baseline(num_classes=751)
+    summary(model, input_size=(3, 256, 128), batch_size=128, device='cpu')
     ouput = model.forward(images)
     pass

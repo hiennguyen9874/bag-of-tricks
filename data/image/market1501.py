@@ -73,8 +73,7 @@ class Market1501(object):
                 name, ext = os.path.splitext(img)
                 if ext == '.jpg':
                     img_path = os.path.join(path, img)
-                    person_id, camera_id, seq, frame = map(
-                        int, pattern.search(name).groups())
+                    person_id, camera_id, seq, frame = map(int, pattern.search(name).groups())
                     if person_id == -1:
                         pbar.update(1)
                         continue

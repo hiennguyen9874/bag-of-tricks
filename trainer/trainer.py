@@ -29,9 +29,8 @@ class Trainer(BaseTrainer):
             num_classes=self.datamanager.datasource.get_num_classes('train'))
 
         # summary model
-        summary(self.model, input_size=(3, 256, 128),
-                batch_size=config['data']['batch_size'], device='cpu')
-
+        summary(self.model, input_size=(3, 256, 128), batch_size=config['data']['batch_size'], device='cpu')
+        
         # losses
         cfg_losses = config['losses']
         self.criterion = Softmax_Triplet_loss(
