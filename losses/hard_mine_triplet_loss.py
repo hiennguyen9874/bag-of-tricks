@@ -32,7 +32,7 @@ class TripletLoss(nn.Module):
         n = inputs.size(0)
 
         # Compute pairwise distance, replace by the official when merged
-        # ||a-b||^2 = ||a||^2 -2<a,b> + ||b||^2
+        # ||a-b||^2 = ||a||^2 -2 * <a,b> + ||b||^2
         dist = torch.pow(inputs, 2).sum(dim=1, keepdim=True).expand(n, n)
         dist = dist + dist.t()
         # dist.addmm_(1, -2, inputs, inputs.t())
@@ -49,10 +49,12 @@ class TripletLoss(nn.Module):
             dist_an.append(dist[i][mask[i] == False].min().unsqueeze(0))
 
         dist_ap = torch.cat(dist_ap)
+
         dist_an = torch.cat(dist_an)
 
         # Compute ranking hinge loss
         y = torch.ones_like(dist_an)
+
         return self.ranking_loss(dist_an, dist_ap, y)
 
 

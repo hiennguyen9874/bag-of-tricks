@@ -9,7 +9,7 @@ from models import Baseline
 from data import DataManger
 from logger import setup_logging
 from utils import read_json, write_json
-from evaluators import top_k, mAP, compute_distance_matrix, cmc_rank, feature_extractor, plot_loss, show_image
+from evaluators import top_k, mAP, compute_distance_matrix, feature_extractor, 
 
 
 def main(config):

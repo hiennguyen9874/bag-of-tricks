@@ -7,10 +7,11 @@ import sys
 sys.path.append(".")
 
 import torch.nn as nn
+from torch.cuda.amp import autocast, GradScaler
 
 from tqdm import tqdm
-from torchsummary import summary
 from thop import profile
+from torchsummary import summary
 
 
 from data import DataManger
@@ -87,6 +88,8 @@ class Trainer(BaseTrainer):
         # send model to device
         self.model.to(self.device)
 
+        self.scaler = GradScaler()
+
         # resume model from last checkpoint
         if config["resume"] != "":
             self._resume_checkpoint(config["resume"])
@@ -153,26 +156,31 @@ class Trainer(BaseTrainer):
                 self.optimizer.zero_grad()
                 self.optimizer_centerloss.zero_grad()
 
-                # forward batch
-                score, feat = self.model(data)
+                with autocast():
+                    # forward batch
+                    score, feat = self.model(data)
 
-                # calculate loss and accuracy
-                loss = (
-                    self.criterion(score, feat, labels)
-                    + self.center_loss(feat, labels) * self.config["losses"]["beta"]
-                )
-                _, preds = torch.max(score.data, dim=1)
+                    # calculate loss and accuracy
+                    loss = (
+                        self.criterion(score, feat, labels)
+                        + self.center_loss(feat, labels) * self.config["losses"]["beta"]
+                    )
+                    _, preds = torch.max(score.data, dim=1)
 
                 # backward parameters
-                loss.backward()
+                # loss.backward()
+                self.scaler.scale(loss).backward()
 
                 # backward parameters for center_loss
                 for param in self.center_loss.parameters():
                     param.grad.data *= 1.0 / self.config["losses"]["beta"]
 
                 # optimize
-                self.optimizer.step()
+                # self.optimizer.step()
+                self.scaler.step(self.optimizer)
                 self.optimizer_centerloss.step()
+
+                self.scaler.update()
 
                 # update loss and accuracy in MetricTracker
                 self.train_metrics.update("loss", loss.item())
@@ -204,15 +212,17 @@ class Trainer(BaseTrainer):
                     # push data to device
                     data, labels = data.to(self.device), labels.to(self.device)
 
-                    # forward batch
-                    score, feat = self.model(data)
+                    with autocast():
+                        # forward batch
+                        score, feat = self.model(data)
 
-                    # calculate loss and accuracy
-                    loss = (
-                        self.criterion(score, feat, labels)
-                        + self.center_loss(feat, labels) * self.config["losses"]["beta"]
-                    )
-                    _, preds = torch.max(score.data, dim=1)
+                        # calculate loss and accuracy
+                        loss = (
+                            self.criterion(score, feat, labels)
+                            + self.center_loss(feat, labels)
+                            * self.config["losses"]["beta"]
+                        )
+                        _, preds = torch.max(score.data, dim=1)
 
                     # update loss and accuracy in MetricTracker
                     self.valid_metrics.update("loss", loss.item())
