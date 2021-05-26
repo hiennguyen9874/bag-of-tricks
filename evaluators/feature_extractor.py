@@ -2,11 +2,12 @@ import torch
 import numpy as np
 from tqdm import trange, tqdm
 
+
 def feature_extractor(model, data_loader, device):
-    """ Extract feature from dataloader
+    """Extract feature from dataloader
     Args:
-        model (models): 
-        data_loader (Dataloader): 
+        model (models):
+        data_loader (Dataloader):
         device (int): torch.device('cpu') if use_gpu == 0 else torch.device(n_gpu)
     Return:
         # TODO:
